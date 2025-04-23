@@ -11,12 +11,15 @@ track_names = wiki.categorymembers("Music_tracks", results=3000, subcategories=F
 
 print(f"Found {len(track_names)} tracks to download...")
 
-# Download the tracks
+# download the tracks
 for track_name in track_names:
-    ydl_opts = {"playlist_items":"1", # This *should* download the latest version only
-            "outtmpl": f"tracks/{track_name}.%(ext)s"}
+    track_name_formatted = track_name.replace("(music track)", "").strip() # removes disambiguation suffix
+    ydl_opts = {"playlist_items":"1", # this *should* download the latest version only
+            "outtmpl": f"tracks/{track_name_formatted}.ogg"}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download( 'https://oldschool.runescape.wiki/w/' + track_name )
+        
+        # splitting sidebar wikitext to find composer
         page = wiki.page(track_name, auto_suggest=False)
         wikitext = page.wikitext.split("|")
         composer = "Unknown"
@@ -24,8 +27,10 @@ for track_name in track_names:
             match = re.match(r'composer\s*=\s*(.+)', item)
             if(match):
                 composer = match.group(1)
-        filename = f"tracks/{track_name}.ogg"
+        
+        # loading file to add metadata
+        filename = f"tracks/{track_name_formatted}.ogg"
         with taglib.File(filename, save_on_exit=True) as song:
             song.tags["ALBUM"] = "Old School Runescape OST"
             song.tags["ARTIST"] = composer
-            song.tags["TITLE"] = track_name
+            song.tags["TITLE"] = track_name_formatted
